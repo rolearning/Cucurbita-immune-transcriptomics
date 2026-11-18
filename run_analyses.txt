@@ -1,0 +1,34 @@
+# Run from the repository root; prepare inputs as described in reproducibility.md.
+set -euo pipefail
+export ANTI_PROJECT_ROOT="$PWD"
+
+bash 0.salmon/00_trim_reads.sh
+bash 0.salmon/01_build_salmon_index.sh
+bash 0.salmon/02_quantify_and_summarize.sh
+
+Rscript 1.normalization/01_tximport_within_species.R
+Rscript 1.normalization/02_cross_species_scaling.R
+
+Rscript 2.global_expression/01_extract_syngroup_expression.R
+Rscript 2.global_expression/02_GSEA.R
+Rscript 2.global_expression/03_GO_eggnOG.R
+Rscript 2.global_expression/04_DEGs_for_prism.R
+
+Rscript 3.SC_index/SC_index_analysis.R
+Rscript 3.SC_index/BS_dominance.R
+Rscript 3.SC_index/BS_sig.R
+
+Rscript 4.Additivity/Additivity_PRED_revision_TMM_NEW.R --method TMM
+
+Rscript 5.KaKs/run_SMA_minexpr.R \
+  --root 5.KaKs --out 5.KaKs/SMA_multi --background-mode multi \
+  --min-expr 0.1,0.3,1 --boot 1000
+
+
+Rscript 5.KaKs/plot_SMA_minexpr.R --results 5.KaKs/SMA_multi
+
+Rscript 6.WGCNA/01_build_and_screen_networks.R
+Rscript 6.WGCNA/02_analyze_final_model.R
+Rscript 6.WGCNA/03_module_go_kegg_enrichment.R
+Rscript 6.WGCNA/04_select_and_plot_go_terms.R
+Rscript 6.WGCNA/05_select_and_plot_kegg_pathways.R
